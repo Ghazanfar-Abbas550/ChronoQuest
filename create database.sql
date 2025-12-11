@@ -1,73 +1,71 @@
--- Create the database (if not exists)
+-- 1. Create the database if it doesn't already exist
 CREATE DATABASE IF NOT EXISTS chronoquest;
+
+-- Switch to the new database
 USE chronoquest;
 
--- -----------------------
--- Table: users
--- -----------------------
-DROP TABLE IF EXISTS users;
-CREATE TABLE users (
+-- 2. Create the 'users' table with correct data types
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    credits INT(11) DEFAULT 1000,
-    energy INT(11) DEFAULT 1000,
+
+    -- Columns derived from the original user data structure
+    credits INT DEFAULT 1000,
+    energy INT DEFAULT 1000,
     current_location VARCHAR(10) DEFAULT 'EFHK',
-    shards INT(11) DEFAULT 0,
-    playerBadges TEXT,
-    playerLoseBadges TEXT,
-    playerHowManyWins INT(11) DEFAULT 0,
-    playerHowManyLoses INT(11) DEFAULT 0,
-    playerHowManyTimesPlayed INT(11) DEFAULT 0,
-    jetstream_uses INT(11) DEFAULT 0,
-    game_state_save TEXT
+
+    -- CRITICAL FIX: These columns store JSON data and MUST be TEXT or LONGTEXT
+    shards TEXT NULL, 
+    playerBadges TEXT NULL, 
+
+    -- Columns for persistent player statistics
+    playerHowManyWins INT DEFAULT 0,
+    playerHowManyLoses INT DEFAULT 0,
+    playerHowManyTimesPlayed INT DEFAULT 0,
+    jetstream_uses INT DEFAULT 0,
+
+    -- CRITICAL FIX: Stores the full, resumable game state
+    game_state_save LONGTEXT NULL 
 );
 
--- -----------------------
--- Table: airports
--- -----------------------
-DROP TABLE IF EXISTS airports;
-CREATE TABLE airports (
-    ident VARCHAR(10) NOT NULL PRIMARY KEY,
-    name VARCHAR(255),
-    code VARCHAR(10),
-    city VARCHAR(100),
-    country VARCHAR(100),
-    distance INT(11),
-    lat DOUBLE,
-    lon DOUBLE
+-- 3. Create the 'airports' table
+CREATE TABLE IF NOT EXISTS airports (
+    ident VARCHAR(10) PRIMARY KEY, -- ICAO code
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(5) NULL, -- IATA code
+    city VARCHAR(100) NULL,
+    country VARCHAR(100) NULL,
+    lat DECIMAL(10, 6) NOT NULL,
+    lon DECIMAL(10, 6) NOT NULL,
+    distance INT DEFAULT 0
 );
 
--- -----------------------
--- Insert sample airports
--- -----------------------
-INSERT INTO airports (ident, name, code, city, country, distance, lat, lon) VALUES
-('EBBR','Brussels Airport','EBBR','Brussels','Belgium',1647,50.9014,4.4844),
-('EDDB','Berlin Brandenburg Airport','EDDB','Berlin','Germany',1128,52.3667,13.5033),
-('EDDM','Munich Airport','EDDM','Munich','Germany',1575,48.353783,11.786086),
-('EDDS','Stuttgart Airport','EDDS','Stuttgart','Germany',1636,48.6889,9.2222),
-('EFHK','Helsinki-Vantaa Airport','EFHK','Helsinki','Finland',0,60.317222,24.963333),
-('EGLL','London Heathrow Airport','EGLL','London','United Kingdom',1848,51.47002,-0.454295),
-('EHAM','Amsterdam Airport Schiphol','EHAM','Amsterdam','Netherlands',1521,52.308611,4.763889),
-('EIDW','Dublin Airport','EIDW','Dublin','Ireland',2022,53.4264,-6.2499),
-('EKCH','Copenhagen Airport','EKCH','Copenhagen','Denmark',892,55.617917,12.655972),
-('ENGM','Oslo Airport','ENGM','Oslo','Norway',763,60.1939,11.1004),
-('ENTC','Trondheim Airport','ENTC','Trondheim','Norway',812,63.457,10.923),
-('ENZV','Stavanger Airport','ENZV','Stavanger','Norway',1095,58.876,5.637),
-('EPWA','Warsaw Chopin Airport','EPWA','Warsaw','Poland',939,52.1658,20.9671),
-('ESSA','Stockholm Arlanda Airport','ESSA','Stockholm','Sweden',398,59.64999,17.92389),
-('EVRA','Riga International Airport','EVRA','Riga','Latvia',382,56.9236,23.9711),
-('LEBL','Barcelona–El Prat Airport','LEBL','Barcelona','Spain',2628,41.2974,2.0833),
-('LEMD','Adolfo Suárez Madrid–Barajas Airport','LEMD','Madrid','Spain',2947,40.483936,-3.567954),
-('LFPG','Charles de Gaulle Airport','LFPG','Paris','France',1896,49.009691,2.547926),
-('LGAV','Athens International Airport','LGAV','Athens','Greece',2490,37.9363,23.9474),
-('LHBP','Budapest Ferenc Liszt International Airport','LHBP','Budapest','Hungary',1480,47.4333,19.2333),
-('LIPE','Pescara Airport','LIPE','Pescara','Italy',2118,42.431,14.187),
-('LIPZ','Venice Marco Polo Airport','LIPZ','Venice','Italy',1844,45.5052,12.3519),
-('LIRF','Leonardo da Vinci–Fiumicino Airport','LIRF','Rome','Italy',2234,41.800278,12.238889),
-('LIRN','Naples Airport','LIRN','Naples','Italy',2281,40.886,14.29),
-('LOWW','Vienna International Airport','LOWW','Vienna','Austria',1460,48.110278,16.569722),
-('LPFR','Porto Airport','LPFR','Porto','Portugal',3116,41.242,-8.678),
-('LPPT','Lisbon Airport','LPPT','Lisbon','Portugal',3364,38.775,-9.135),
-('LROP','Henri Coandă International Airport','LROP','Bucharest','Romania',1753,44.5705,26.1022),
-('LSZH','Zurich Airport','LSZH','Zurich','Switzerland',1779,47.451389,8.564444);
+-- Switch to the chronoquest database
+USE chronoquest;
+
+INSERT INTO airports (ident, name, code, city, country, lat, lon, distance) VALUES
+-- Starting Location
+('EFHK', 'Helsinki-Vantaa Airport', 'HEL', 'Helsinki', 'Finland', 60.317222, 24.963333, 0),
+
+-- Major International Hubs
+('EGLL', 'London Heathrow Airport', 'LHR', 'London', 'United Kingdom', 51.470000, -0.454300, 0),
+('KJFK', 'John F. Kennedy International Airport', 'JFK', 'New York', 'United States', 40.641300, -73.778100, 0),
+('RJTT', 'Tokyo Haneda Airport', 'HND', 'Tokyo', 'Japan', 35.552300, 139.779600, 0),
+('OMDB', 'Dubai International Airport', 'DXB', 'Dubai', 'United Arab Emirates', 25.253200, 55.365100, 0),
+('YSSY', 'Sydney Airport', 'SYD', 'Sydney', 'Australia', -33.946100, 151.177200, 0),
+('SBGR', 'São Paulo-Guarulhos International Airport', 'GRU', 'São Paulo', 'Brazil', -23.435600, -46.473100, 0),
+('FACT', 'Cape Town International Airport', 'CPT', 'Cape Town', 'South Africa', -33.968300, 18.601700, 0),
+('UUEE', 'Sheremetyevo International Airport', 'SVO', 'Moscow', 'Russia', 55.972600, 37.414600, 0),
+('ZBAA', 'Beijing Capital International Airport', 'PEK', 'Beijing', 'China', 40.079900, 116.603100, 0),
+('WSSS', 'Singapore Changi Airport', 'SIN', 'Singapore', 1.364400, 103.991500, 0),
+('CYYZ', 'Toronto Pearson International Airport', 'YYZ', 'Toronto', 'Canada', 43.677700, -79.624800, 0),
+('EDDF', 'Frankfurt Airport', 'FRA', 'Frankfurt', 'Germany', 50.037900, 8.562200, 0),
+('VIDP', 'Indira Gandhi International Airport', 'DEL', 'Delhi', 'India', 28.566500, 77.103100, 0),
+('HECA', 'Cairo International Airport', 'CAI', 'Cairo', 'Egypt', 30.121900, 31.405600, 0),
+('KLAX', 'Los Angeles International Airport', 'LAX', 'Los Angeles', 'United States', 33.942500, -118.408000, 0),
+('LFPG', 'Paris Charles de Gaulle Airport', 'CDG', 'Paris', 'France', 49.009700, 2.547900, 0),
+('EHAM', 'Amsterdam Airport Schiphol', 'AMS', 'Amsterdam', 'Netherlands', 52.308600, 4.763900, 0),
+('VTBS', 'Suvarnabhumi Airport', 'BKK', 'Bangkok', 'Thailand', 13.681100, 100.747200, 0),
+('VHHH', 'Hong Kong International Airport', 'HKG', 'Hong Kong', 'China', 22.308900, 113.914700, 0),
+('SCEL', 'Santiago International Airport', 'SCL', 'Santiago', 'Chile', -33.393000, -70.785800, 0);
